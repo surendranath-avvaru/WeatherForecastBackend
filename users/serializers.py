@@ -1,9 +1,16 @@
 from rest_framework import serializers
+from django.core.mail import send_mail
 from django.contrib.auth.models import User
 
+from users.utils import generate_password
 from users.settings import (
+							FIELD_REQUIRED,
 							EMAIL_EXISTS_ERROR,
-							PASSWORD_NOT_MATCHED_ERROR
+							NOT_REGISTERED_MAIL,
+							PASSWORD_NOT_MATCHED_ERROR,
+							RESET_PASSWORD_SUBJECT,
+							RESET_PASSWORD_BODY,
+							DEFAULT_FROM_EMAIL
 							)
 
 
@@ -40,3 +47,30 @@ class UserSerializer(serializers.ModelSerializer):
 			if User.objects.filter(email=email).exists():
 				raise serializers.ValidationError(EMAIL_EXISTS_ERROR)
 		return email
+
+
+class ChangePasswordSerializer(serializers.Serializer):
+    old_password = serializers.CharField(required=True)
+    new_password = serializers.CharField(min_length=8, required=True)
+
+
+class PasswordResetSerializer(serializers.Serializer):
+    email = serializers.EmailField()
+
+    def is_valid(self):
+        self._errors = {}
+        if self.initial_data.get('email',False):
+            if not User.objects.filter(email=self.initial_data.get('email')).exists():
+                self._errors = {"email": [ NOT_REGISTERED_MAIL ]}
+                return
+            return True
+        self._errors = {"email": [ FIELD_REQUIRED ]}
+        return
+
+    def save(self):
+        email = self.initial_data.get('email')
+        user = User.objects.get(email=email)
+        new_password = generate_password()
+        user.set_password(new_password)
+        send_mail(RESET_PASSWORD_SUBJECT, RESET_PASSWORD_BODY + new_password, DEFAULT_FROM_EMAIL, [email], fail_silently=True)
+        user.save()

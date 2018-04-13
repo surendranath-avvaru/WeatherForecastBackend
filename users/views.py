@@ -9,7 +9,13 @@ from rest_framework.decorators import permission_classes
 from rest_framework import generics
 
 from root.response import GenericResponse, CustomResponse
-from users.serializers import UserListSerializer, UserSerializer
+from users.serializers import (
+							UserListSerializer,
+							UserSerializer,
+							ChangePasswordSerializer,
+							PasswordResetSerializer
+						)
+from users.settings import WRONG_OLD_PASSWORD
 
 
 class UserList(generics.ListAPIView):
@@ -53,3 +59,31 @@ class UserDetailView(generics.RetrieveUpdateDestroyAPIView):
         user = self.get_object(pk)
         user.delete()
         return GenericResponse(status=status.HTTP_200_OK)
+
+class ChangePasswordView(APIView):
+
+    def post(self, request):
+        user = request.user
+        serializer = ChangePasswordSerializer(data=request.data)
+        if serializer.is_valid():
+            if not user.check_password(request.data.get('old_password')):
+                return GenericResponse(
+                                {'old_password': [ WRONG_OLD_PASSWORD ]},
+                                status=status.HTTP_400_BAD_REQUEST
+                            )
+            user.set_password(request.data.get('new_password'))
+            user.save()
+            return GenericResponse(status=status.HTTP_200_OK)
+        else:
+            return GenericResponse(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+
+class PasswordResetView(APIView):
+    permission_classes = [AllowAny,]
+
+    def post(self, request, *args, **kwargs):
+        serializer = PasswordResetSerializer(data=request.data)
+        if serializer.is_valid():
+            serializer.save()
+            return GenericResponse(status=status.HTTP_200_OK)
+        else:
+            return GenericResponse(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
