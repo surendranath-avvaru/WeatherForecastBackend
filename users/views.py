@@ -44,7 +44,7 @@ class UserDetailView(generics.RetrieveUpdateDestroyAPIView):
 
     def get(self, request, pk):
         user = self.get_object(pk)
-        serializer = UserSerializer(instance=user)
+        serializer = UserListSerializer(instance=user)
         return GenericResponse(serializer.data, status=status.HTTP_200_OK)
 
     def put(self, request, pk):
