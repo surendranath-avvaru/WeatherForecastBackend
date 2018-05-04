@@ -18,6 +18,14 @@ from users.serializers import (
 from users.settings import WRONG_OLD_PASSWORD
 
 
+class MyProfileView(generics.RetrieveAPIView):
+
+    def get(self, request):
+        user = request.user
+        serializer = UserListSerializer(instance=user)
+        return GenericResponse(serializer.data, status=status.HTTP_200_OK)
+
+
 class UserList(generics.ListAPIView):
 	queryset = User.objects.all()
 	serializer_class = UserListSerializer

@@ -15,11 +15,14 @@ from users.settings import (
 
 
 class UserListSerializer(serializers.ModelSerializer):
+	is_superuser = serializers.SerializerMethodField()
 
-    class Meta:
-        model = User
-        fields = ['id', 'first_name', 'last_name', 'username', 'email']
+	class Meta:
+		model = User
+		fields = ['id', 'first_name', 'last_name', 'username', 'email', 'is_superuser']
 
+	def get_is_superuser(self, obj):
+		return obj.is_superuser
 
 class UserSerializer(serializers.ModelSerializer):
 	email = serializers.EmailField()
